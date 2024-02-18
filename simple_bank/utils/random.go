@@ -26,4 +26,6 @@ func RandomString(n int) string  {
 		c := alphabets[rand.Intn(k)]
 		sb.WriteByte(c)
 	}
+
+	return sb.String()
 }

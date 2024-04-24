@@ -10,7 +10,7 @@ import (
 func main() {
 	setUpAPI()
 	fmt.Println("Listening on localhost port: 8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServeTLS(":8080", "server.crt", "server.key", nil))
 }
 
 func setUpAPI() {

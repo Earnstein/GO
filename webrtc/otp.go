@@ -8,8 +8,8 @@ import (
 )
 
 type OTP struct {
-	Key     string    `json:"key"`
-	Created time.Time `json:"created"`
+	Key     string    
+	Created time.Time 
 }
 
 type RentensionMap map[string]OTP
@@ -32,7 +32,7 @@ func (rm RentensionMap) NewOTP() OTP {
 }
 
 func (rm RentensionMap) verifyOTP(otp string) bool {
-	if _, ok := rm[otp]; ok {
+	if _, ok := rm[otp]; !ok {
 		return false
 	}
 	delete(rm, otp)

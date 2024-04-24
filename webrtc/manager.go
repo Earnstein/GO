@@ -56,8 +56,8 @@ func SendMessage(event Event, client *Client) error {
 	if err := json.Unmarshal(event.Data, &message); err != nil {
 		return fmt.Errorf("error reading message: %v", err)
 	}
-	
-	var broadMessage  NewMessageEvent
+
+	var broadMessage NewMessageEvent
 	broadMessage.Message = message.Message
 	broadMessage.From = message.From
 
@@ -65,7 +65,7 @@ func SendMessage(event Event, client *Client) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal broadcast message: %v", err)
 	}
-	
+
 	outGoingEvent := Event{
 		Data: data,
 		Type: EventNewMessage,

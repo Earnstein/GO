@@ -8,8 +8,8 @@ import (
 )
 
 type OTP struct {
-	Key     string    
-	Created time.Time 
+	Key     string
+	Created time.Time
 }
 
 type RentensionMap map[string]OTP

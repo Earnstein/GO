@@ -1,0 +1,4 @@
+.env
+cert.bash
+server.crt
+server.key

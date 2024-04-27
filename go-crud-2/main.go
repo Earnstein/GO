@@ -23,7 +23,7 @@ var (
 	usercollection *mongo.Collection
 	mongoclient    *mongo.Client
 	err            error
-	MONGO_URL		string
+	MONGO_URL      string
 )
 
 func init() {

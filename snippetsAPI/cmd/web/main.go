@@ -4,25 +4,31 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/earnstein/GO/snippetsAPI/cmd/controllers"
 )
 
-var PORT = ":5000"
+
 
 func main() {
-
-	addr := flag.String("addr", PORT, "HTTP network port address")
+	// command flags
+	addr := flag.String("addr", ":5000", "HTTP network port address")
 	flag.Parse()
 
-	
+	// loggers
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	app := controllers.NewApplicaton(infoLog, errorLog)
+
+	// server
 	server := http.NewServeMux()
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 	server.Handle("/static/", http.StripPrefix("/static", fileServer))
-	server.HandleFunc("/", controllers.HomeHandler)
-	server.HandleFunc("/create", controllers.HandleSnippetCreate)
-	server.HandleFunc("/snippet/view", controllers.HandleSnippetView)
-	log.Printf("server is listening on port %s", *addr)
+	server.HandleFunc("/", app.HomeHandler)
+	server.HandleFunc("/create", app.HandleSnippetCreate)
+	server.HandleFunc("/snippet/view", app.HandleSnippetView)
+	infoLog.Printf("server is listening on port %s", *addr)
 	err := http.ListenAndServe(*addr, server)
-	log.Fatal(err)
+	errorLog.Fatal(err)
 }

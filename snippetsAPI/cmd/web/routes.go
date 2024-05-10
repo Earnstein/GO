@@ -9,9 +9,10 @@ func (app *Application) routes() *http.ServeMux {
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 	server.Handle("/static/", http.StripPrefix("/static", fileServer))
 
-	server.HandleFunc("/", app.HomeHandler)
-	server.HandleFunc("/create", app.HandleSnippetCreate)
-	server.HandleFunc("/snippet/view", app.HandleSnippetView)
+	server.HandleFunc("/", app.homeHandler)
+	server.HandleFunc("/snippet/create", app.handleSnippetCreate)
+	server.HandleFunc("/snippet/view", app.handleSnippetView)
+	server.HandleFunc("/snippet/latest", app.handleSnippetList)
 	
 	return server
 }

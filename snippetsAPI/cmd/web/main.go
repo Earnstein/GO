@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/earnstein/GO/snippetsAPI/internal/models"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
@@ -14,12 +15,14 @@ import (
 type Application struct {
 	InfoLog  *log.Logger
 	ErrorLog *log.Logger
+	snippets *models.SnippetModel
 }
 
-func NewApplicaton(infoLogger, errorLogger *log.Logger) *Application {
+func NewApplicaton(infoLogger, errorLogger *log.Logger, db *sql.DB) *Application {
 	return &Application{
 		InfoLog:  infoLogger,
 		ErrorLog: errorLogger,
+		snippets: &models.SnippetModel{DB: db},
 	}
 }
 
@@ -65,7 +68,7 @@ func main() {
 	defer db.Close()
 
 	// server
-	app := NewApplicaton(infoLog, errorLog)
+	app := NewApplicaton(infoLog, errorLog, db)
 	server := NewServer(*addr, errorLog, app)
 	infoLog.Printf("server is listening on port %s", *addr)
 	err = server.ListenAndServe()

@@ -83,7 +83,7 @@ func(app *Application) handleSnippetView(w http.ResponseWriter, r *http.Request)
 
 
 
-func(app *Application) handleLatestSnippet(w http.ResponseWriter, r *http.Request) {
+func(app *Application) handleSnippetList(w http.ResponseWriter, r *http.Request) {
 	snippets, err := app.snippets.GetLatest()
 
 	if err != nil {

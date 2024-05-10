@@ -91,16 +91,6 @@ func(app *Application) handleSnippetList(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	data, _ := json.Marshal(snippets)
-
-	// for _, snippet := range snippets {
-	// 	data, err := json.Marshal(snippet)
-	// 	if err != nil {
-	// 		app.serverError(w, err)
-	// 		return
-	// 	}
-	// 	w.Header().Set("Content-Type", "application/json")
-	// 	w.Write(data)
-	// }
 	w.Write(data)
 
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 
 func (app *Application) homeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		app.NotFound(w)
+		app.notFound(w)
 		return
 	}
 
@@ -51,23 +52,55 @@ func(app *Application) handleSnippetCreate(w http.ResponseWriter, r *http.Reques
 		app.serverError(w, err)
 		return
 	}
-
-	jsonResponse := map[string]string{"message": "movie snippets created successfully", "id": fmt.Sprintf("%v", id), "title": reqBody.Title}
-	msg, err := json.Marshal(jsonResponse)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
 	
-	fmt.Fprintln(w, string(msg))
+	http.Redirect(w, r, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
 }
 
 func(app *Application) handleSnippetView(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 	if err != nil || id < 1 {
-		app.NotFound(w)
+		app.notFound(w)
 		return
 	}
 
-	fmt.Fprintf(w, "You sent an id: %d...", id)
+	snippet, err := app.snippets.Get(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFound(w)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+
+	s , err := json.Marshal(snippet)
+	 if err != nil {
+		app.serverError(w, err)
+	 }
+	fmt.Fprint(w, string(s))
+}
+
+
+
+
+func(app *Application) handleLatestSnippet(w http.ResponseWriter, r *http.Request) {
+	snippets, err := app.snippets.GetLatest()
+
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	data, _ := json.Marshal(snippets)
+
+	// for _, snippet := range snippets {
+	// 	data, err := json.Marshal(snippet)
+	// 	if err != nil {
+	// 		app.serverError(w, err)
+	// 		return
+	// 	}
+	// 	w.Header().Set("Content-Type", "application/json")
+	// 	w.Write(data)
+	// }
+	w.Write(data)
+
 }

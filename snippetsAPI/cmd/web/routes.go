@@ -1,18 +1,30 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
 
+	"github.com/julienschmidt/httprouter"
+	"github.com/justinas/alice"
+)
 
-func (app *Application) routes() *http.ServeMux {
-	server := http.NewServeMux()
+func (app *Application) routes() http.Handler {
+	
+	router := httprouter.New()
+	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+		app.notFound(w)
+	})
 
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
-	server.Handle("/static/", http.StripPrefix("/static", fileServer))
-
-	server.HandleFunc("/", app.homeHandler)
-	server.HandleFunc("/snippet/create", app.handleSnippetCreate)
-	server.HandleFunc("/snippet/view", app.handleSnippetView)
-	server.HandleFunc("/snippet/latest", app.handleSnippetList)
+	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 	
-	return server
+
+	sessionMiddleware := alice.New(app.sessionManager.LoadAndSave)
+	router.Handler(http.MethodGet, "/", sessionMiddleware.ThenFunc(app.homeHandler))
+	router.Handler(http.MethodPost, "/snippet/create", sessionMiddleware.ThenFunc(app.handleSnippetCreate))
+	router.Handler(http.MethodGet, "/snippet/view/:id", sessionMiddleware.ThenFunc(app.handleSnippetView))
+	router.Handler(http.MethodGet, "/snippet/latest", sessionMiddleware.ThenFunc(app.handleSnippetList))
+
+	middlewareChain := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
+
+	return middlewareChain.Then(router)
 }

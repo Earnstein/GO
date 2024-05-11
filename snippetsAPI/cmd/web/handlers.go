@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/earnstein/GO/snippetsAPI/internal/models"
+	"github.com/julienschmidt/httprouter"
 )
 
 func (app *Application) homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -32,37 +33,38 @@ func (app *Application) homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
-func(app *Application) handleSnippetCreate(w http.ResponseWriter, r *http.Request) {
+func (app *Application) handleSnippetCreate(w http.ResponseWriter, r *http.Request) {
 	var reqBody models.SnippetBody
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
-		app.serverError(w, err)
+		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-	if r.Method != http.MethodPost {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Allow", http.MethodPost)
-		app.clientError(w, http.StatusMethodNotAllowed)
-		return
-	}
-	
-	id , err := app.snippets.Insert(reqBody.Title, reqBody.Content, reqBody.Expires)
+	_, err = app.snippets.Insert(reqBody.Title, reqBody.Content, reqBody.Expires)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	
-	http.Redirect(w, r, fmt.Sprintf("/snippet/view?id=%d", id), http.StatusSeeOther)
+	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
+	app.sessionManager.Put(r.Context(), "title", reqBody.Title)
+
+	s, err := json.Marshal(reqBody)
+	if err != nil {
+		app.serverError(w, err)
+	}
+	fmt.Fprint(w, string(s))
 }
 
-func(app *Application) handleSnippetView(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+func (app *Application) handleSnippetView(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	id, err := strconv.Atoi(params.ByName("id"))
 	if err != nil || id < 1 {
 		app.notFound(w)
 		return
 	}
-
+	flash := app.sessionManager.Get(r.Context(), "flash")
+	title := app.sessionManager.PopString(r.Context(), "title")
+	fmt.Println(flash, title)
 	snippet, err := app.snippets.Get(id)
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
@@ -73,17 +75,14 @@ func(app *Application) handleSnippetView(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	s , err := json.Marshal(snippet)
-	 if err != nil {
+	s, err := json.Marshal(snippet)
+	if err != nil {
 		app.serverError(w, err)
-	 }
+	}
 	fmt.Fprint(w, string(s))
 }
 
-
-
-
-func(app *Application) handleSnippetList(w http.ResponseWriter, r *http.Request) {
+func (app *Application) handleSnippetList(w http.ResponseWriter, r *http.Request) {
 	snippets, err := app.snippets.GetLatest()
 
 	if err != nil {

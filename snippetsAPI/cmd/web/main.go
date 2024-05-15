@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"log"
@@ -16,26 +17,38 @@ import (
 )
 
 type Application struct {
-	InfoLog  *log.Logger
-	ErrorLog *log.Logger
-	snippets *models.SnippetModel
+	InfoLog        *log.Logger
+	ErrorLog       *log.Logger
+	snippets       *models.SnippetModel
 	sessionManager *scs.SessionManager
+	userManager    *models.UserModel
 }
 
-func NewApplicaton(infoLogger, errorLogger *log.Logger, db *sql.DB, sessionManager *scs.SessionManager) *Application {
+func newApplicaton(infoLogger, errorLogger *log.Logger, db *sql.DB, sessionManager *scs.SessionManager) *Application {
 	return &Application{
-		InfoLog:  infoLogger,
-		ErrorLog: errorLogger,
-		snippets: &models.SnippetModel{DB: db},
+		InfoLog:        infoLogger,
+		ErrorLog:       errorLogger,
+		snippets:       &models.SnippetModel{DB: db},
+		userManager:    &models.UserModel{DB: db},
 		sessionManager: sessionManager,
 	}
 }
 
-func NewServer(addr string, logger *log.Logger, app *Application) *http.Server {
+func newServer(addr string, logger *log.Logger, app *Application, tlsconfig *tls.Config) *http.Server {
 	return &http.Server{
-		Addr:     addr,
-		ErrorLog: logger,
-		Handler:  app.routes(),
+		Addr:         addr,
+		ErrorLog:     logger,
+		Handler:      app.routes(),
+		TLSConfig:    tlsconfig,
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+}
+
+func newTls() *tls.Config {
+	return &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
 	}
 }
 
@@ -77,9 +90,12 @@ func main() {
 	sessionManager.Store = mysqlstore.New(db)
 	sessionManager.Lifetime = 12 * time.Hour
 
+	// tls configuration
+	tlsconfig := newTls()
+
 	// server
-	app := NewApplicaton(infoLog, errorLog, db, sessionManager)
-	server := NewServer(*addr, errorLog, app)
+	app := newApplicaton(infoLog, errorLog, db, sessionManager)
+	server := newServer(*addr, errorLog, app, tlsconfig)
 	infoLog.Printf("server is listening on port %s", *addr)
 	err = server.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	errorLog.Fatal(err)

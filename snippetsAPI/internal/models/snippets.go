@@ -18,9 +18,9 @@ type SnippetModel struct {
 }
 
 type SnippetBody struct {
-	Title   string `json:"title"`
-	Content string `json:"content"`
-	Expires string `json:"expires"`
+	Title   string `json:"title" validate:"required"`
+	Content string `json:"content" validate:"required, min=10, max=100"`
+	Expires string `json:"expires" validate:"required"`
 }
 
 func (m *SnippetModel) Insert(title, content, expires string) (int, error) {

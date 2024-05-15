@@ -42,7 +42,7 @@ func DBConnection() *mongo.Client {
 }
 
 
-func OpenCollection(client *mongo.Client, collectionName string) *mongo.Collection {
-	collection := client.Database("Auths").Collection(collectionName)
+func OpenCollection(client *mongo.Client, dbName, collectionName string) *mongo.Collection {
+	collection := client.Database(dbName).Collection(collectionName)
 	return collection
 }

@@ -53,4 +53,3 @@ func corsHandler() gin.HandlerFunc {
 		c.Next()
 	}
 }
-

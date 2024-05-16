@@ -30,6 +30,7 @@ func (app *Application) homeHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err = templates.ExecuteTemplate(w, "base", nil); err != nil {
 		app.serverError(w, err)
+		return
 	}
 }
 
@@ -51,6 +52,7 @@ func (app *Application) handleSnippetCreate(w http.ResponseWriter, r *http.Reque
 	s, err := json.Marshal(reqBody)
 	if err != nil {
 		app.serverError(w, err)
+		return
 	}
 	fmt.Fprint(w, string(s))
 }
@@ -69,15 +71,17 @@ func (app *Application) handleSnippetView(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
 			app.notFound(w)
+			return
 		} else {
 			app.serverError(w, err)
+			return
 		}
-		return
 	}
 
 	s, err := json.Marshal(snippet)
 	if err != nil {
 		app.serverError(w, err)
+		return
 	}
 	fmt.Fprint(w, string(s))
 }
@@ -92,4 +96,37 @@ func (app *Application) handleSnippetList(w http.ResponseWriter, r *http.Request
 	data, _ := json.Marshal(snippets)
 	w.Write(data)
 
+}
+
+func (app *Application) handleUserSignup(w http.ResponseWriter, r *http.Request) {
+	var reqBody models.UserRequestBody
+
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	if err := app.userManager.Insert(reqBody.Name, reqBody.Email, reqBody.Password); err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			errMsg := map[string]string{"error": "Email is already in use"}
+			errBytes, err := json.Marshal(errMsg)
+			if err != nil {
+				app.serverError(w, err)
+				return
+			}
+
+			fmt.Fprintf(w, "%+v", string(errBytes))
+
+		}
+		return
+	}
+	app.sessionManager.Put(r.Context(), "msg", "your signup was successful")
+	fmt.Fprint(w, "success user created")
+}
+
+func (app *Application) handleUserSignin(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "authenticate user")
+}
+
+func (app *Application) handleUserLogout(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Logout the user...")
 }

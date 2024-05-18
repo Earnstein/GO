@@ -12,6 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+
 func (app *Application) homeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		app.notFound(w)
@@ -33,6 +34,8 @@ func (app *Application) homeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+// SNIPPETS HANDLERS
 
 func (app *Application) handleSnippetCreate(w http.ResponseWriter, r *http.Request) {
 	var reqBody models.SnippetBody
@@ -98,8 +101,10 @@ func (app *Application) handleSnippetList(w http.ResponseWriter, r *http.Request
 
 }
 
+// USER HANDLERS
+
 func (app *Application) handleUserSignup(w http.ResponseWriter, r *http.Request) {
-	var reqBody models.UserRequestBody
+	var reqBody models.UserSignUpBody
 
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		app.clientError(w, http.StatusBadRequest)
@@ -124,9 +129,46 @@ func (app *Application) handleUserSignup(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *Application) handleUserSignin(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "authenticate user")
+	var reqBody models.UserSignInBody
+
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	id, err := app.userManager.Authenticate(reqBody.Email, reqBody.Password)
+
+	if err != nil {
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			app.clientError(w, http.StatusBadRequest)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+
+	err = app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "authenticatedUserId", id)
+
+	fmt.Fprintln(w, "success, you are logged in")
 }
 
 func (app *Application) handleUserLogout(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Logout the user...")
+	err := app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	app.sessionManager.Remove(r.Context(), "authenticatedUserId")
+	fmt.Fprintln(w, "User Loggedout successfully...")
+}
+
+func (app *Application) isAuthenticated(r *http.Request) bool {
+	ok := app.sessionManager.Exists(r.Context(), "authenticatedUserId")
+	return ok
 }

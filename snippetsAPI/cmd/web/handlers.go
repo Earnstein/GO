@@ -12,7 +12,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-
 func (app *Application) homeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		app.notFound(w)
@@ -44,13 +43,12 @@ func (app *Application) handleSnippetCreate(w http.ResponseWriter, r *http.Reque
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
+
 	_, err = app.snippets.Insert(reqBody.Title, reqBody.Content, reqBody.Expires)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
-	app.sessionManager.Put(r.Context(), "title", reqBody.Title)
 
 	s, err := json.Marshal(reqBody)
 	if err != nil {
@@ -67,9 +65,7 @@ func (app *Application) handleSnippetView(w http.ResponseWriter, r *http.Request
 		app.notFound(w)
 		return
 	}
-	flash := app.sessionManager.Get(r.Context(), "flash")
-	title := app.sessionManager.PopString(r.Context(), "title")
-	fmt.Println(flash, title)
+
 	snippet, err := app.snippets.Get(id)
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
@@ -110,6 +106,7 @@ func (app *Application) handleUserSignup(w http.ResponseWriter, r *http.Request)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
+
 	if err := app.userManager.Insert(reqBody.Name, reqBody.Email, reqBody.Password); err != nil {
 		if errors.Is(err, models.ErrDuplicateEmail) {
 			errMsg := map[string]string{"error": "Email is already in use"}
@@ -118,7 +115,6 @@ func (app *Application) handleUserSignup(w http.ResponseWriter, r *http.Request)
 				app.serverError(w, err)
 				return
 			}
-
 			fmt.Fprintf(w, "%+v", string(errBytes))
 
 		}
@@ -169,6 +165,13 @@ func (app *Application) handleUserLogout(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *Application) isAuthenticated(r *http.Request) bool {
-	ok := app.sessionManager.Exists(r.Context(), "authenticatedUserId")
-	return ok
+	isAuthenticated, ok := r.Context().Value(isAuthenticatedContextKey).(bool)
+	if !ok {
+		return false
+	}
+	return isAuthenticated
+}
+
+func ping(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("OK"))
 }

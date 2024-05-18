@@ -20,10 +20,12 @@ func (app *Application) routes() http.Handler {
 	sessionMiddleware := alice.New(app.sessionManager.LoadAndSave)
 
 	// snippets routes
-	router.Handler(http.MethodGet, "/", sessionMiddleware.ThenFunc(app.homeHandler))
-	router.Handler(http.MethodPost, "/snippet/create", sessionMiddleware.ThenFunc(app.handleSnippetCreate))
-	router.Handler(http.MethodGet, "/snippet/view/:id", sessionMiddleware.ThenFunc(app.handleSnippetView))
-	router.Handler(http.MethodGet, "/snippet/latest", sessionMiddleware.ThenFunc(app.handleSnippetList))
+
+	protectedMiddleware := sessionMiddleware.Append(app.requireAuthentication)
+	router.Handler(http.MethodGet, "/", protectedMiddleware.ThenFunc(app.homeHandler))
+	router.Handler(http.MethodPost, "/snippet/create", protectedMiddleware.ThenFunc(app.handleSnippetCreate))
+	router.Handler(http.MethodGet, "/snippet/view/:id", protectedMiddleware.ThenFunc(app.handleSnippetView))
+	router.Handler(http.MethodGet, "/snippet/latest", protectedMiddleware.ThenFunc(app.handleSnippetList))
 
 	// user routes
 

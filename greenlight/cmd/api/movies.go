@@ -9,13 +9,25 @@ import (
 )
 
 func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "create a new movie")
+	var reqBody struct {
+		Title   string   `json:"title"`
+		Year    int32    `json:"year"`
+		Runtime int32    `json:"runtime"`
+		Genres  []string `json:"genres"`
+	}
+
+	if err := app.readJSONResponse(w, r, &reqBody); err != nil {
+		app.badRequestErrorHandler(w, r, err)
+		return
+	}
+	data := envelope{"status": "ok", "movie": reqBody}
+	app.writeJSONResponse(w, http.StatusCreated, data, nil)
 }
 
 func (app *application) getMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIdParam(r)
 	if err != nil {
-		http.NotFound(w, r)
+		app.notFoundHandler(w, r)
 		return
 	}
 
@@ -31,9 +43,7 @@ func (app *application) getMovieHandler(w http.ResponseWriter, r *http.Request) 
 	data := envelope{"movie": Movie}
 	err = app.writeJSONResponse(w, http.StatusOK, data, nil)
 	if err != nil {
-		app.logger.Println(err)
-		http.Error(w, "The server encountered a problem and could not process your request", http.StatusInternalServerError)
-		return
+		app.serverErrorHandler(w, r, err)
 	}
 
 }

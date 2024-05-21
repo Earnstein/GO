@@ -6,20 +6,36 @@ import (
 	"time"
 
 	"github.com/earnstein/GO/greenlight/internal/data"
+	"github.com/earnstein/GO/greenlight/internal/validator"
 )
 
 func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
 	var reqBody struct {
-		Title   string   `json:"title"`
-		Year    int32    `json:"year"`
-		Runtime int32    `json:"runtime"`
-		Genres  []string `json:"genres"`
+		Title   string       `json:"title"`
+		Year    int32        `json:"year"`
+		Runtime data.Runtime `json:"runtime"`
+		Genres  []string     `json:"genres"`
 	}
 
 	if err := app.readJSONResponse(w, r, &reqBody); err != nil {
 		app.badRequestErrorHandler(w, r, err)
 		return
 	}
+
+	movie := &data.Movie{
+		Title:   reqBody.Title,
+		Year:    reqBody.Year,
+		Runtime: reqBody.Runtime,
+		Genres:  reqBody.Genres,
+	}
+
+	// Validation
+	v := validator.New()
+	if data.ValidateMovie(v, movie); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	
 	data := envelope{"status": "ok", "movie": reqBody}
 	app.writeJSONResponse(w, http.StatusCreated, data, nil)
 }

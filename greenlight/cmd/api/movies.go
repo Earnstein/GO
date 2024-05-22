@@ -125,6 +125,73 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 
 }
 
+func (app *application) patchUpdateMovieHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIdParam(r)
+	if err != nil {
+		app.notFoundHandler(w, r)
+		return
+	}
+
+	movie, err := app.models.Movies.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundHandler(w, r)
+		default:
+			app.serverErrorHandler(w, r, err)
+		}
+		return
+	}
+
+	var reqBody struct {
+		Title   *string       `json:"title"`
+		Year    *int32        `json:"year"`
+		Runtime *data.Runtime `json:"runtime"`
+		Genres  []string      `json:"genres"`
+	}
+
+	if err := app.readJSONResponse(w, r, &reqBody); err != nil {
+		app.badRequestErrorHandler(w, r, err)
+		return
+	}
+
+	if reqBody.Title != nil {
+		movie.Title = *reqBody.Title
+	}
+	if reqBody.Year != nil {
+		movie.Year = *reqBody.Year
+	}
+	if reqBody.Runtime != nil {
+		movie.Runtime = *reqBody.Runtime
+	}
+	if reqBody.Genres != nil {
+		movie.Genres = reqBody.Genres
+	}
+
+	v := validator.New()
+	if data.ValidateMovie(v, movie); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	err = app.models.Movies.Update(movie)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorHandler(w, r, err)
+		}
+		return
+	}
+
+	response := envelope{"movie": movie}
+	err = app.writeJSONResponse(w, http.StatusOK, response, nil)
+	if err != nil {
+		app.serverErrorHandler(w, r, err)
+	}
+
+}
+
 func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIdParam(r)
 	if err != nil {

@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -61,8 +62,15 @@ func (m *MovieModel) Insert(movie *Movie) error {
 			VALUES ($1, $2, $3, $4)
 			RETURNING id, created_at, version`
 
-	args := []interface{}{movie.Title, movie.Year, movie.Runtime, pq.Array(movie.Genres)}
-	row := m.DB.QueryRow(stmt, args...)
+	args := []interface{}{
+		movie.Title,
+		movie.Year,
+		movie.Runtime,
+		pq.Array(movie.Genres),
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+	row := m.DB.QueryRowContext(ctx, stmt, args...)
 	err := row.Scan(&movie.ID, &movie.CreatedAt, &movie.Version)
 	return err
 }
@@ -78,7 +86,10 @@ func (m *MovieModel) Get(id int64) (*Movie, error) {
 
 	var movie Movie
 
-	err := m.DB.QueryRow(stmt, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, stmt, id).Scan(
 		&movie.ID,
 		&movie.Title,
 		&movie.Year,
@@ -114,7 +125,10 @@ func (m *MovieModel) Update(movie *Movie) error {
 		movie.ID,
 		movie.Version,
 	}
-	err := m.DB.QueryRow(stmt, args...).Scan(&movie.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, stmt, args...).Scan(&movie.Version)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -134,7 +148,9 @@ func (m *MovieModel) Delete(id int64) error {
 	stmt := ` DELETE FROM movies
 			WHERE id = $1`
 
-	result, err := m.DB.Exec(stmt, id)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+	result, err := m.DB.ExecContext(ctx, stmt, id)
 	if err != nil {
 		return err
 	}

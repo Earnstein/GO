@@ -37,8 +37,8 @@ type (
 	}
 )
 
-func NewModels(db *sql.DB) Models {
-	return Models{
+func NewModels(db *sql.DB) *Models {
+	return &Models{
 		Movies: MovieModel{DB: db},
 	}
 }
@@ -110,6 +110,46 @@ func (m *MovieModel) Get(id int64) (*Movie, error) {
 	return &movie, nil
 }
 
+func (m *MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
+
+	stmt := `SELECT id, title, year, runtime, genres, created_at, version
+			FROM movies
+			WHERE (LOWER(title) = LOWER($1) OR $1 = '')
+			AND (genres @> $2 OR $2 = '{}')
+			ORDER BY id`
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	rows, err := m.DB.QueryContext(ctx, stmt, title, pq.Array(genres))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	
+	var movies []*Movie
+	for rows.Next() {
+		var movie Movie
+		err := rows.Scan(
+			&movie.ID,
+			&movie.Title,
+			&movie.Year,
+			&movie.Runtime,
+			pq.Array(&movie.Genres),
+			&movie.CreatedAt,
+			&movie.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+		movies = append(movies, &movie)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return movies, nil
+}
 func (m *MovieModel) Update(movie *Movie) error {
 
 	stmt := `UPDATE movies

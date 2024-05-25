@@ -31,10 +31,10 @@ type config struct {
 type application struct {
 	config config
 	logger *log.Logger
-	models data.Models
+	models *data.Models
 }
 
-func NewApplication(config config, logger *log.Logger, models data.Models) *application {
+func NewApplication(config config, logger *log.Logger, models *data.Models) *application {
 	return &application{
 		config: config,
 		logger: logger,

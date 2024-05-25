@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/earnstein/GO/greenlight/internal/validator"
@@ -112,11 +113,13 @@ func (m *MovieModel) Get(id int64) (*Movie, error) {
 
 func (m *MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
 
-	stmt := `SELECT id, title, year, runtime, genres, created_at, version
-			FROM movies
-			WHERE (to_tsvector('english', title) @@ plainto_tsquery('english', $1) OR $1 = '')
-			AND (genres @> $2 OR $2 = '{}')
-			ORDER BY id`
+	stmt := fmt.Sprintf(`
+		SELECT id, title, year, runtime, genres, created_at, version
+		FROM movies
+		WHERE (to_tsvector('english', title) @@ plainto_tsquery('english', $1) OR $1 = '')
+		AND (genres @> $2 OR $2 = '{}')
+		ORDER BY %s %s, id ASC
+		LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
@@ -126,8 +129,7 @@ func (m *MovieModel) GetAll(title string, genres []string, filters Filters) ([]*
 		return nil, err
 	}
 	defer rows.Close()
-	
-	
+
 	var movies []*Movie
 	for rows.Next() {
 		var movie Movie

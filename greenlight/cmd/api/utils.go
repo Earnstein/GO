@@ -91,7 +91,6 @@ func (app *application) readJSONResponse(w http.ResponseWriter, r *http.Request,
 	return nil
 }
 
-
 func (app *application) readString(qs url.Values, key string, defaultvalue string) string {
 	s := qs.Get(key)
 
@@ -101,7 +100,6 @@ func (app *application) readString(qs url.Values, key string, defaultvalue strin
 
 	return s
 }
-
 
 func (app *application) readCSV(qs url.Values, key string, defaultvalue []string) []string {
 	csv := qs.Get(key)

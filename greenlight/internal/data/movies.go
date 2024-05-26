@@ -124,7 +124,7 @@ func (m *MovieModel) GetAll(title string, genres []string, filters Filters) ([]*
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	rows, err := m.DB.QueryContext(ctx, stmt, title, pq.Array(genres))
+	rows, err := m.DB.QueryContext(ctx, stmt, title, pq.Array(genres), filters.limit(), filters.offset())
 	if err != nil {
 		return nil, err
 	}

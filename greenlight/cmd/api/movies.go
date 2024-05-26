@@ -237,14 +237,14 @@ func (app *application) listMoviesHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	movies, err := app.models.Movies.GetAll(queryParam.Title, queryParam.Genres, queryParam.filter)
+	movies, metadata, err := app.models.Movies.GetAll(queryParam.Title, queryParam.Genres, queryParam.filter)
 
 	if err != nil {
 		app.serverErrorHandler(w, r, err)
 		return
 	}
 
-	response := envelope{"movies": movies}
+	response := envelope{"metadata": metadata, "movies": movies}
 	err = app.writeJSONResponse(w, http.StatusOK, response, nil)
 	if err != nil {
 		app.serverErrorHandler(w, r, err)

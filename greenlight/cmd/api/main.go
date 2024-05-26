@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/earnstein/GO/greenlight/internal/data"
+	"github.com/earnstein/GO/greenlight/internal/jsonlog"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -30,11 +31,11 @@ type config struct {
 
 type application struct {
 	config config
-	logger *log.Logger
+	logger *jsonlog.Logger
 	models *data.Models
 }
 
-func NewApplication(config config, logger *log.Logger, models *data.Models) *application {
+func NewApplication(config config, logger *jsonlog.Logger, models *data.Models) *application {
 	return &application{
 		config: config,
 		logger: logger,
@@ -46,15 +47,16 @@ func NewServer(config config, app *application) *http.Server {
 	return &http.Server{
 		Addr:         fmt.Sprintf(":%d", config.port),
 		Handler:      app.routes(),
+		ErrorLog:     log.New(app.logger, "", 0),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
 }
 func main() {
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 	if err := godotenv.Load(); err != nil {
-		logger.Fatal(err)
+		logger.PrintFatal(err, nil)
 	}
 
 	var cfg config
@@ -72,18 +74,21 @@ func main() {
 
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.Fatal(err)
+		logger.PrintFatal(err, nil)
 	}
 	defer db.Close()
 
-	logger.Println("database connection pool is established")
+	logger.PrintInfo("database connection pool is established", nil)
 
 	app := NewApplication(cfg, logger, data.NewModels(db))
 	srv := NewServer(cfg, app)
 
-	app.logger.Printf("Starting %s server on port %s", cfg.env, srv.Addr)
+	logger.PrintInfo("Starting server", map[string]string{
+		"addr": srv.Addr,
+		"env":  cfg.env,
+	})
 	err = srv.ListenAndServe()
-	app.logger.Fatal(err)
+	logger.PrintFatal(err, nil)
 }
 
 func openDB(cfg config) (*sql.DB, error) {

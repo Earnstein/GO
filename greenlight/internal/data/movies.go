@@ -130,7 +130,6 @@ func (m *MovieModel) GetAll(title string, genres []string, filters Filters) ([]*
 	}
 	defer rows.Close()
 
-
 	totalRecords := 0
 	var movies []*Movie
 	for rows.Next() {
@@ -146,7 +145,7 @@ func (m *MovieModel) GetAll(title string, genres []string, filters Filters) ([]*
 			&movie.Version,
 		)
 		if err != nil {
-			return nil,Metadata{}, err
+			return nil, Metadata{}, err
 		}
 		movies = append(movies, &movie)
 	}

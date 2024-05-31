@@ -27,6 +27,12 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  string
 	}
+
+	limiter struct {
+		rps     float64
+		burst   int
+		enabled bool
+	}
 }
 
 type application struct {
@@ -35,7 +41,7 @@ type application struct {
 	models *data.Models
 }
 
-func NewApplication(config config, logger *jsonlog.Logger, models *data.Models) *application {
+func newApplication(config config, logger *jsonlog.Logger, models *data.Models) *application {
 	return &application{
 		config: config,
 		logger: logger,
@@ -43,7 +49,7 @@ func NewApplication(config config, logger *jsonlog.Logger, models *data.Models) 
 	}
 }
 
-func NewServer(config config, app *application) *http.Server {
+func newServer(config config, app *application) *http.Server {
 	return &http.Server{
 		Addr:         fmt.Sprintf(":%d", config.port),
 		Handler:      app.routes(),
@@ -70,6 +76,12 @@ func main() {
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
+
+	// Rate limiter flags
+	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter maximum per second")
+	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
+	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+
 	flag.Parse()
 
 	db, err := openDB(cfg)
@@ -80,14 +92,8 @@ func main() {
 
 	logger.PrintInfo("database connection pool is established", nil)
 
-	app := NewApplication(cfg, logger, data.NewModels(db))
-	srv := NewServer(cfg, app)
-
-	logger.PrintInfo("Starting server", map[string]string{
-		"addr": srv.Addr,
-		"env":  cfg.env,
-	})
-	err = srv.ListenAndServe()
+	app := newApplication(cfg, logger, data.NewModels(db))
+	err = app.serve()
 	logger.PrintFatal(err, nil)
 }
 

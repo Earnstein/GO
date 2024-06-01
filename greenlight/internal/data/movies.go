@@ -35,12 +35,23 @@ type (
 
 	Models struct {
 		Movies MovieModel
+		Users  UserModel
 	}
 )
 
 func NewModels(db *sql.DB) *Models {
 	return &Models{
 		Movies: MovieModel{DB: db},
+		Users:  UserModel{DB: db},
+	}
+}
+
+func NewMovie(title string, year int32, runtime Runtime, genres []string) *Movie {
+	return &Movie{
+		Title:   title,
+		Year:    year,
+		Runtime: runtime,
+		Genres:  genres,
 	}
 }
 

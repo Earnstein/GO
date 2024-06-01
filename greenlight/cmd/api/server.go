@@ -13,7 +13,7 @@ import (
 func (app *application) serve() error {
 	srv := newServer(app.config, app)
 	shutdownError := make(chan error)
-	go func(){
+	go func() {
 		quit := make(chan os.Signal, 1)
 
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

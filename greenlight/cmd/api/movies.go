@@ -21,13 +21,7 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 		app.badRequestErrorHandler(w, r, err)
 		return
 	}
-
-	movie := &data.Movie{
-		Title:   reqBody.Title,
-		Year:    reqBody.Year,
-		Runtime: reqBody.Runtime,
-		Genres:  reqBody.Genres,
-	}
+	movie := data.NewMovie(reqBody.Title, reqBody.Year, reqBody.Runtime, reqBody.Genres)
 	// Validation
 	v := validator.New()
 	if data.ValidateMovie(v, movie); !v.Valid() {

@@ -15,6 +15,10 @@ func (app *application) routes() http.Handler {
 
 	// SYSTEM CHECK HANDLER
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
+	// USER ROUTES
+	router.HandlerFunc(http.MethodPost, "/v1/user", app.createUserHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/user/:id", app.getUserHandler)
+	router.HandlerFunc(http.MethodPatch, "/v1/user/:id", app.updateUserHandler)
 
 	// MOVIES ROUTES
 	router.HandlerFunc(http.MethodGet, "/v1/movies", app.listMoviesHandler)

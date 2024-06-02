@@ -4,10 +4,12 @@ Hi,
 
 Thanks for joining Beiphfong!
 
-For future reference, your user ID number is {{.ID}}
+Please send a request to the `PUT /v1/users/activated` endpoint with the following JSON
+body to activate your account: {"token": "{{.activationToken}}"}
+Please note that this is a one-time use token and it will expire in 3 days.
 
 Best,
-The Beiphfong Team
+The Beiphfong Team.
 {{end}}
 
 {{define "htmlBody"}}
@@ -20,7 +22,15 @@ The Beiphfong Team
 <body>
     <h1>Hi! {{.Username}}</h1>
     <p>Thanks for joining Beiphfong!.</p>
-    <p>For future reference, your user ID number is {{.ID}}</p>
+    <p>For future reference, your user ID number is {{.userID}}.</p>
+    <p>Please send a request to the <code>PUT /v1/users/activated</code> endpoint with the following JSON body to activate your account:</p>
+    <pre>
+        <code>
+            {"token": "{{.activationToken}}"}
+        </code>
+    </pre>
+    <p>Please note that this is a one-time use token and it will expire in 3 days.</p>
+    <p>Thanks,</p>
     <p>Best,</p>
     <p>The Beiphfong Team</p>
 </body>

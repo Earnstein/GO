@@ -98,8 +98,8 @@ func main() {
 	// Mail config flags
 	flag.StringVar(&cfg.smtp.host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
 	flag.IntVar(&cfg.smtp.port, "smtp-port", 2525, "SMTP port")
-	flag.StringVar(&cfg.smtp.username, "smtp-username", "14240df435c2d7", "SMTP username")
-	flag.StringVar(&cfg.smtp.password, "smtp-password", "5d1ff73bd0c4b0", "SMTP password")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", os.Getenv("SMTP_USERNAME"), "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", os.Getenv("SMTP_PASSWORD"), "SMTP password")
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Beiphfong <no-reply@beiphfong.earnstein.net>", "SMTP sender")
 	flag.Parse()
 

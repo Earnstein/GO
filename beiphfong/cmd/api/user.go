@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/earnstein/GO/greenlight/internal/data"
 	"github.com/earnstein/GO/greenlight/internal/validator"
@@ -46,8 +47,19 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// generate a token
+	token, err := app.models.Tokens.New(newUser.ID, 3*24*time.Hour, data.ScopeActivation)
+	if err != nil {
+		app.serverErrorHandler(w, r, err)
+		return
+	}
+
 	app.background(func() {
-		err = app.mailer.Send(newUser.Email, "user_email.tmpl", newUser)
+		data := map[string]interface{}{
+			"activationToken": token.Plaintext,
+			"userID":          newUser.ID,
+		}
+		err = app.mailer.Send(newUser.Email, "user_email.tmpl", data)
 		if err != nil {
 			app.logger.PrintError(err, nil)
 			return

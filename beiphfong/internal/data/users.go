@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
 	"strings"
 	"time"
 
@@ -81,7 +80,6 @@ func ValidateUser(v *validator.Validator, user *User) {
 	v.Check(user.Username != "", "name", "must be provided")
 	v.Check(len(user.Username) <= 250, "name", "must not be more than 250 bytes long")
 	ValidateEmail(v, user.Email)
-	log.Println(user.Password.plaintext)
 	if user.Password.plaintext != nil {
 		ValidatePassword(v, *user.Password.plaintext)
 	}
@@ -101,6 +99,7 @@ func (m *UserModel) Insert(user *User) error {
 	args := []interface{}{user.Username, user.Email, user.Password.hash, user.Activated}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
+
 	err := m.DB.QueryRowContext(ctx, stmt, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 	if err != nil {
 		switch {

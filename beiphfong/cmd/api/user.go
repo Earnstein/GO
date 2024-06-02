@@ -34,7 +34,7 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	_, err = app.models.Users.GetByEmail(newUser.Email)
-	if err == nil {
+	if nil == err {
 		v.AddError("email", "a user with this email address already exists")
 		app.failedValidationResponse(w, r, v.Errors)
 		return
@@ -45,6 +45,14 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		app.serverErrorHandler(w, r, err)
 		return
 	}
+
+	app.background(func() {
+		err = app.mailer.Send(newUser.Email, "user_email.tmpl", newUser)
+		if err != nil {
+			app.logger.PrintError(err, nil)
+			return
+		}
+	})
 
 	response := envelope{"user": newUser}
 	err = app.writeJSONResponse(w, http.StatusCreated, response, nil)

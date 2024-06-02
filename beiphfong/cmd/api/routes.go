@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/justinas/alice"
 )
 
 func (app *application) routes() http.Handler {
@@ -28,5 +29,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPatch, "/v1/movie/:id", app.patchUpdateMovieHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/movie/:id", app.deleteMovieHandler)
 
-	return app.rateLimit(app.recoverPanic(router))
+	// GENERAL MIDDLEWARE
+	middlewareChain := alice.New(app.recoverPanicMiddleware, app.rateLimitMiddleware, app.requestInfoMiddleware)
+	return middlewareChain.Then(router)
 }

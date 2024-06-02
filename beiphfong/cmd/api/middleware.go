@@ -10,7 +10,21 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func (app *application) recoverPanic(next http.Handler) http.Handler {
+func (app *application) logRequestMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestInfo := map[string]string{
+			"addr":     r.RemoteAddr,
+			"protocol": r.Proto,
+			"method":   r.Method,
+			"url":      r.URL.RequestURI(),
+		}
+
+		app.logger.PrintInfo("requestInfo", requestInfo)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) recoverPanicMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		defer func() {
@@ -24,7 +38,7 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 	})
 }
 
-func (app *application) rateLimit(next http.Handler) http.Handler {
+func (app *application) rateLimitMiddleware(next http.Handler) http.Handler {
 
 	type client struct {
 		limiter  *rate.Limiter

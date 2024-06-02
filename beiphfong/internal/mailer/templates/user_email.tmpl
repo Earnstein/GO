@@ -1,0 +1,31 @@
+{{define "subject"}}Welcome to Beiphfong{{end}}
+{{define "plainBody"}}
+Hi,
+
+Thanks for joining Beiphfong! To activate your account, click the link below:
+
+{{.Link}}
+For future reference, your user ID number is {{.ID}}
+If you have any questions, feel free to reply to this email.
+
+Best,
+The Beiphfong Team
+{{end}}
+
+{{define "htmlBody"}}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+</head>
+<body>
+    <h1>Hi!</h1>
+    <p>Thanks for joining Beiphfong! To activate your account, click the link below:</p>
+    <a href="{{.Link}}">{{.Link}}</a>
+    <p>If you have any questions, feel free to reply to this email.</p>
+    <p>Best,</p>
+    <p>The Beiphfong Team</p>
+</body>
+</html>
+{{end}}

@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
-	"log"
 	"time"
 
 	"github.com/earnstein/GO/greenlight/internal/validator"
@@ -40,7 +39,6 @@ func generateToken(userID int64, ttl time.Duration, scope string) (*Token, error
 	}
 
 	token.Plaintext = base64.StdEncoding.WithPadding(base64.NoPadding).EncodeToString(randomBytes)
-	log.Println(token.Plaintext)
 	hash := sha256.Sum256([]byte(token.Plaintext))
 	token.Hash = hash[:]
 

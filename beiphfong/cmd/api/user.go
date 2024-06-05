@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -74,10 +75,79 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+func (app *application) activeUserHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		TokenPlaintext string `json:"token"`
+	}
+
+	err := app.readJSONResponse(w, r, &input)
+	if err != nil {
+		app.badRequestErrorHandler(w, r, err)
+		return
+	}
+
+	v := validator.New()
+	if data.ValidateTokenPlaintext(v, input.TokenPlaintext); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	user, err := app.models.Users.GetForToken(data.ScopeActivation, input.TokenPlaintext)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			v.AddError("token", "invalid or expired activation token")
+			app.failedValidationResponse(w, r, v.Errors)
+		default:
+			app.serverErrorHandler(w, r, err)
+		}
+		return
+	}
+
+	user.Activated = true
+	err = app.models.Users.Update(user)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorHandler(w, r, err)
+		}
+		return
+	}
+
+	err = app.models.Tokens.DeleteAllForUser(data.ScopeActivation, user.ID)
+	if err != nil {
+		app.serverErrorHandler(w, r, err)
+		return
+	}
+
+	response := envelope{"message": "user successfully activated", "user": user}
+	err = app.writeJSONResponse(w, http.StatusOK, response, nil)
+	if err != nil {
+		app.serverErrorHandler(w, r, err)
+		return
+	}
+
+}
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
 func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 
+}
+
+func (app *application) getAllUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := app.models.Users.GetUsers()
+	if err != nil {
+		app.serverErrorHandler(w, r, err)
+		return
+	}
+
+	err = app.writeJSONResponse(w, http.StatusOK, envelope{"users": users}, nil)
+	if err != nil {
+		app.serverErrorHandler(w, r, err)
+		return
+	}
 }

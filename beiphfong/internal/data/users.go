@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"strings"
@@ -167,4 +168,74 @@ func (m *UserModel) Update(user *User) error {
 		}
 	}
 	return nil
+}
+
+// REMOVE IN PRODUCTION
+func (m *UserModel) GetUsers() ([]*User, error) {
+	stmt := `SELECT id, created_at, username, email,  activated, version
+			FROM users
+			ORDER BY id`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := m.DB.QueryContext(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var users []*User
+	for rows.Next() {
+		var user User
+		err := rows.Scan(&user.ID, &user.CreatedAt, &user.Username, &user.Email, &user.Activated, &user.Version)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, &user)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (m *UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error) {
+	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
+	stmt := `SELECT users.id, users.created_at, users.username, users.email, users.password_hash, users.activated, users.version
+			FROM users
+			INNER JOIN tokens
+			ON users.id = tokens.user_id
+			WHERE tokens.hash = $1
+			AND tokens.scope = $2
+			AND tokens.expiry > $3`
+
+	args := []interface{}{
+		tokenHash[:],
+		tokenScope,
+		time.Now(),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var user User
+	err := m.DB.QueryRowContext(ctx, stmt, args...).Scan(
+		&user.ID,
+		&user.CreatedAt,
+		&user.Username,
+		&user.Email,
+		&user.Password.hash,
+		&user.Activated,
+		&user.Version,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
 }

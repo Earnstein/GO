@@ -77,6 +77,11 @@ func ValidatePassword(v *validator.Validator, password string) {
 	v.Check(validator.Matches(password, validator.SpecialCharRegex), "password", "password should contain at least one special character")
 }
 
+func ValidateLoginPassword(v *validator.Validator, password string) {
+	password = strings.Trim(password, " ")
+	v.Check(password != "", "password", "must be provided")
+}
+
 func ValidateUser(v *validator.Validator, user *User) {
 	v.Check(user.Username != "", "name", "must be provided")
 	v.Check(len(user.Username) >= 2, "name", "must be at least 2 bytes long")

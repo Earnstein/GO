@@ -16,7 +16,7 @@ func (app *application) routes() http.Handler {
 
 	// SYSTEM CHECK HANDLER
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
-	
+
 	// AUTHENTICATION ROUTES
 	router.HandlerFunc(http.MethodPost, "/v1/token/authentication", app.createAuthenticationTokenHandler)
 
@@ -36,6 +36,6 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodDelete, "/v1/movie/:id", app.deleteMovieHandler)
 
 	// GENERAL MIDDLEWARE
-	middlewareChain := alice.New(app.recoverPanicMiddleware, app.rateLimitMiddleware, app.requestInfoMiddleware)
+	middlewareChain := alice.New(app.recoverPanicMiddleware, app.rateLimitMiddleware, app.requestInfoMiddleware, app.authenticate)
 	return middlewareChain.Then(router)
 }

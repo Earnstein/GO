@@ -160,4 +160,3 @@ func (app *application) requireActivateUser(next http.Handler) http.Handler {
 	})
 	return app.requireAuthenticatedUser(fn)
 }
-

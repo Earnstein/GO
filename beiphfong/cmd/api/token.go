@@ -9,7 +9,7 @@ import (
 	"github.com/earnstein/GO/greenlight/internal/validator"
 )
 
-func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) signInHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`

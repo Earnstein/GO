@@ -28,13 +28,12 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/users", app.getAllUsers)
 
 	// MOVIES ROUTES
-	protectedMiddleWare := alice.New(app.requireActivateUser)
-	router.Handler(http.MethodGet, "/v1/movies", protectedMiddleWare.ThenFunc(app.listMoviesHandler))
-	router.Handler(http.MethodPost, "/v1/movie", protectedMiddleWare.ThenFunc(app.createMovieHandler))
-	router.Handler(http.MethodGet, "/v1/movie/:id", protectedMiddleWare.ThenFunc(app.getMovieHandler))
-	router.Handler(http.MethodPut, "/v1/movie/:id", protectedMiddleWare.ThenFunc(app.updateMovieHandler))
-	router.Handler(http.MethodPatch, "/v1/movie/:id", protectedMiddleWare.ThenFunc(app.patchUpdateMovieHandler))
-	router.Handler(http.MethodDelete, "/v1/movie/:id", protectedMiddleWare.ThenFunc(app.deleteMovieHandler))
+	router.Handler(http.MethodGet, "/v1/movies", app.requirePermission("movies:read", (app.listMoviesHandler)))
+	router.Handler(http.MethodPost, "/v1/movie", app.requirePermission("movies:write", (app.createMovieHandler)))
+	router.Handler(http.MethodGet, "/v1/movie/:id", app.requirePermission("movies:read", (app.getMovieHandler)))
+	router.Handler(http.MethodPut, "/v1/movie/:id", app.requirePermission("movies:write", (app.updateMovieHandler)))
+	router.Handler(http.MethodPatch, "/v1/movie/:id", app.requirePermission("movies:write", (app.patchUpdateMovieHandler)))
+	router.Handler(http.MethodDelete, "/v1/movie/:id", app.requirePermission("movies:write", (app.deleteMovieHandler)))
 
 	// GENERAL MIDDLEWARE
 	middlewareChain := alice.New(app.recoverPanicMiddleware, app.rateLimitMiddleware, app.requestInfoMiddleware, app.authenticate)

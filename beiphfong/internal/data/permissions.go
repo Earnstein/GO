@@ -56,9 +56,8 @@ func (pm *PermissionModel) GetAllUserPermission(userId int64) (Permissions, erro
 	return permissions, nil
 }
 
-
 func (pm *PermissionModel) AddUserPermission(userId int64, code ...string) error {
-	stmt :=  `
+	stmt := `
 	INSERT INTO users_permissions (user_id, permission_id)
 	SELECT $1, p.id
 	FROM permissions p

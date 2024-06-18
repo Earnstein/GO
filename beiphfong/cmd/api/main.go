@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
+	"expvar"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -82,7 +84,6 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		logger.PrintFatal(err, nil)
 	}
-
 	var cfg config
 
 	// Server flags
@@ -106,7 +107,8 @@ func main() {
 	flag.StringVar(&cfg.smtp.username, "smtp-username", os.Getenv("SMTP_USERNAME"), "SMTP username")
 	flag.StringVar(&cfg.smtp.password, "smtp-password", os.Getenv("SMTP_PASSWORD"), "SMTP password")
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Beiphfong <no-reply@beiphfong.earnstein.net>", "SMTP sender")
-	// CORS flags
+
+	// CORS config flags
 	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
 		cfg.cors.allowedOrigins = strings.Fields(val)
 		return nil
@@ -118,9 +120,15 @@ func main() {
 		logger.PrintFatal(err, nil)
 	}
 	defer db.Close()
-
 	logger.PrintInfo("database connection pool is established", nil)
 
+	//Expvar metrics
+	expvar.NewString("version").Set(version)
+	expvar.Publish("goroutines", expvar.Func(func() any { return runtime.NumGoroutine() }))
+	expvar.Publish("database", expvar.Func(func() any { return db.Stats() }))
+	expvar.Publish("timestamp", expvar.Func(func() any { return time.Now().Unix() }))
+
+	
 	mailer := mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender)
 	app := newApplication(cfg, logger, data.NewModels(db), mailer)
 	err = app.serve()

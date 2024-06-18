@@ -48,6 +48,13 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Add the "movies:read" permission for the new user
+	err = app.models.Permissions.AddUserPermission(newUser.ID, "movies:read")
+	if err != nil {
+		app.serverErrorHandler(w, r, err)
+		return
+	}
+
 	// generate a token
 	token, err := app.models.Tokens.New(newUser.ID, 3*24*time.Hour, data.ScopeActivation)
 	if err != nil {
@@ -76,23 +83,23 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) activeUserHandler(w http.ResponseWriter, r *http.Request) {
-	var input struct {
+	var reqBody struct {
 		TokenPlaintext string `json:"token"`
 	}
 
-	err := app.readJSONResponse(w, r, &input)
+	err := app.readJSONResponse(w, r, &reqBody)
 	if err != nil {
 		app.badRequestErrorHandler(w, r, err)
 		return
 	}
 
 	v := validator.New()
-	if data.ValidateTokenPlaintext(v, input.TokenPlaintext); !v.Valid() {
+	if data.ValidateTokenPlaintext(v, reqBody.TokenPlaintext); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
-	user, err := app.models.Users.GetForToken(data.ScopeActivation, input.TokenPlaintext)
+	user, err := app.models.Users.GetForToken(data.ScopeActivation, reqBody.TokenPlaintext)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):

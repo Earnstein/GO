@@ -1,6 +1,7 @@
 package main
 
 import (
+	"expvar"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -34,6 +35,9 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodPut, "/v1/movie/:id", app.requirePermission("movies:write", (app.updateMovieHandler)))
 	router.Handler(http.MethodPatch, "/v1/movie/:id", app.requirePermission("movies:write", (app.patchUpdateMovieHandler)))
 	router.Handler(http.MethodDelete, "/v1/movie/:id", app.requirePermission("movies:write", (app.deleteMovieHandler)))
+
+	// METRICS ROUTES
+	router.Handler(http.MethodGet, "/v1/metrics", expvar.Handler())
 
 	// GENERAL MIDDLEWARE
 	middlewareChain := alice.New(app.recoverPanicMiddleware, app.enableCorsMiddleware, app.rateLimitMiddleware, app.requestInfoMiddleware, app.authenticate)

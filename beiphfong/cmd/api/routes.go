@@ -36,6 +36,6 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodDelete, "/v1/movie/:id", app.requirePermission("movies:write", (app.deleteMovieHandler)))
 
 	// GENERAL MIDDLEWARE
-	middlewareChain := alice.New(app.recoverPanicMiddleware, app.rateLimitMiddleware, app.requestInfoMiddleware, app.authenticate)
+	middlewareChain := alice.New(app.recoverPanicMiddleware, app.enableCorsMiddleware, app.rateLimitMiddleware, app.requestInfoMiddleware, app.authenticate)
 	return middlewareChain.Then(router)
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type Permissions []string
@@ -24,7 +26,7 @@ type PermissionModel struct {
 func (pm *PermissionModel) GetAllUserPermission(userId int64) (Permissions, error) {
 	stmt := `SELECT permissions.code 
 		FROM permissions
-		INNER JOIN users_permissions ON users_permissions.permission_id = permission_id
+		INNER JOIN users_permissions ON users_permissions.permission_id = permissions.id
 		INNER JOIN users ON users_permissions.user_id = users.id
 		WHERE users.id = $1`
 
@@ -52,4 +54,19 @@ func (pm *PermissionModel) GetAllUserPermission(userId int64) (Permissions, erro
 		return nil, err
 	}
 	return permissions, nil
+}
+
+
+func (pm *PermissionModel) AddUserPermission(userId int64, code ...string) error {
+	stmt :=  `
+	INSERT INTO users_permissions (user_id, permission_id)
+	SELECT $1, p.id
+	FROM permissions p
+	WHERE p.code = ANY($2)`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := pm.DB.ExecContext(ctx, stmt, userId, pq.Array(code))
+	return err
 }

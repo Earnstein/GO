@@ -40,6 +40,6 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/v1/metrics", expvar.Handler())
 
 	// GENERAL MIDDLEWARE
-	middlewareChain := alice.New(app.recoverPanicMiddleware, app.enableCorsMiddleware, app.rateLimitMiddleware, app.requestInfoMiddleware, app.authenticate)
+	middlewareChain := alice.New(app.metrics, app.recoverPanicMiddleware, app.enableCorsMiddleware, app.rateLimitMiddleware, app.requestInfoMiddleware, app.authenticate)
 	return middlewareChain.Then(router)
 }

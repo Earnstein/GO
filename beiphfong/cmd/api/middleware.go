@@ -205,21 +205,18 @@ func (app *application) requirePermission(code string, next http.HandlerFunc) ht
 	return app.requireActivateUser(fn)
 }
 
-
-func (app *application) metrics(next http.Handler) http.Handler{
+func (app *application) metrics(next http.Handler) http.Handler {
 	totalRequestsReceived := expvar.NewInt("total_requests_received")
 	totalResponseSent := expvar.NewInt("total_response_sent")
 	totalProcessingtime := expvar.NewInt("total_processing_time_μs")
 	totalResponsesSentByStatus := expvar.NewMap("total_responses_sent_by_status")
 
-	return http.HandlerFunc(func( w http.ResponseWriter, r *http.Request){
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		totalRequestsReceived.Add(1)
 
-		metrics := httpsnoop.CaptureMetrics(next, w , r)
-
+		metrics := httpsnoop.CaptureMetrics(next, w, r)
 
 		totalResponseSent.Add(1)
-		
 
 		totalProcessingtime.Add(metrics.Duration.Microseconds())
 

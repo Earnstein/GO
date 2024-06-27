@@ -128,7 +128,6 @@ func main() {
 	expvar.Publish("database", expvar.Func(func() any { return db.Stats() }))
 	expvar.Publish("timestamp", expvar.Func(func() any { return time.Now().Unix() }))
 
-	
 	mailer := mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender)
 	app := newApplication(cfg, logger, data.NewModels(db), mailer)
 	err = app.serve()

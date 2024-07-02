@@ -4,6 +4,10 @@ import (
 	"net/http"
 )
 
+func ping(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("OK"))
+}
+
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	data := envelope{
 		"status": "available",

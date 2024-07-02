@@ -96,7 +96,7 @@ func (app *application) rateLimitMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if app.config.limiter.enabled {
 			ip := realip.FromRequest(r)
-			
+
 			mu.Lock()
 
 			if _, found := clients[ip]; !found {

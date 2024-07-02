@@ -113,7 +113,14 @@ func main() {
 		cfg.cors.allowedOrigins = strings.Fields(val)
 		return nil
 	})
+	
+	displayVersion := flag.Bool("version", false, "Displays version number")
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", version)
+		os.Exit(0)
+	}
 
 	db, err := openDB(cfg)
 	if err != nil {
